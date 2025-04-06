@@ -16,12 +16,55 @@ db.init_app(app)
 
 api = Api(app)
 
+
+@app.route('/plants', methods=['GET'])
+def get_plants():
+    plants = Plant.query.all()
+    return jsonify([plant.to_dict() for plant in plants])
+
+
 class Plants(Resource):
-    pass
+    def get(self):
+        plants = Plant.query.all()
+        return [plant.to_dict() for plant in plants], 200
+
+    def post(self):
+        data = request.get_json()
+        new_plant = Plant(
+            name=data['name'],
+            image=data['image'],
+            price=data['price']
+        )
+        db.session.add(new_plant)
+        db.session.commit()
+        return new_plant.to_dict(), 201
+
 
 class PlantByID(Resource):
-    pass
-        
+    def get(self, id):
+        plant = Plant.query.get_or_404(id)
+        return plant.to_dict(), 200
+
+    def put(self, id):
+        data = request.get_json()
+        plant = Plant.query.get_or_404(id)
+        plant.name = data['name']
+        plant.image = data['image']
+        plant.price = data['price']
+        db.session.commit()
+        return plant.to_dict(), 200
+
+    def delete(self, id):
+        plant = Plant.query.get_or_404(id)
+        db.session.delete(plant)
+        db.session.commit()
+        return '', 204
+
+
+# Adding the Resources to API with corresponding routes
+api.add_resource(Plants, '/plants')
+api.add_resource(PlantByID, '/plants/<int:id>')
+
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
